@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Board Weekly Update – iOS Glass Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- PDF Export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#0a1533;
+      --stroke:rgba(255,255,255,.18);
+      --stroke2:rgba(255,255,255,.28);
+      --text:#eef3ff;
+      --muted:rgba(238,243,255,.72);
+      --shadow:0 24px 80px rgba(0,0,0,.45);
+      --shadow2:0 14px 40px rgba(0,0,0,.30);
+      --radius:22px;
+      --radius2:18px;
+      --blur:18px;
+      --good:#22c55e;
+
+      /* panel colors requested (base hex) */
+      --cA:#EBF7F6; /* current + mitigation */
+      --cB:#FFEDED; /* next + challenges */
+    }
+
+    [data-theme="light"]{
+      --bg1:#f5f8ff;
+      --bg2:#edf3ff;
+      --stroke:rgba(16,24,40,.12);
+      --stroke2:rgba(16,24,40,.18);
+      --text:#0b1324;
+      --muted:rgba(11,19,36,.70);
+      --shadow:0 20px 60px rgba(16,24,40,.12);
+      --shadow2:0 12px 28px rgba(16,24,40,.10);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 15% 5%, rgba(92,162,255,.26), transparent 55%),
+        radial-gradient(1000px 700px at 90% 10%, rgba(34,197,94,.16), transparent 55%),
+        radial-gradient(1200px 900px at 65% 95%, rgba(255,93,93,.14), transparent 50%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));
+      overflow-x:hidden;
+    }
+
+    .wrap{
+      max-width:1240px;
+      margin:0 auto;
+      padding:26px 18px 44px;
+    }
+
+    /* Topbar */
+    .topbar{
+      position:sticky;
+      top:14px;
+      z-index:30;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:14px 16px;
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow2);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:260px;
+    }
+    .logo{
+      width:42px;height:42px;
+      border-radius:14px;
+      background:
+        radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.55), transparent 60%),
+        linear-gradient(135deg, rgba(92,162,255,.95), rgba(34,197,94,.80));
+      border:1px solid rgba(255,255,255,.22);
+      box-shadow:0 10px 26px rgba(0,0,0,.22);
+    }
+    .brand h1{
+      margin:0;
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.2px;
+      line-height:1.2;
+    }
+    .brand .sub{
+      margin-top:2px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex:1;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.08);
+      backdrop-filter:blur(var(--blur));
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      user-select:none;
+    }
+    .pill label{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .selectWrap{ position:relative; }
+    select{
+      appearance:none;
+      border:0;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-weight:900;
+      font-size:12.5px;
+      padding-right:18px;
+      cursor:pointer;
+    }
+    .chev{
+      position:absolute;
+      right:10px;
+      top:50%;
+      transform:translateY(-45%);
+      width:0;height:0;
+      border-left:5px solid transparent;
+      border-right:5px solid transparent;
+      border-top:6px solid var(--muted);
+      pointer-events:none;
+    }
+
+    .btn{
+      cursor:pointer;
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:12.5px;
+      font-weight:900;
+      color:var(--text);
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.07));
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      transition:transform .15s ease, filter .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+    .btn:active{ transform:translateY(0); filter:brightness(.98); }
+
+    .btn.primary{
+      border-color:rgba(92,162,255,.35);
+      background:linear-gradient(180deg, rgba(92,162,255,.32), rgba(92,162,255,.16));
+    }
+    .btn.good{
+      border-color:rgba(34,197,94,.35);
+      background:linear-gradient(180deg, rgba(34,197,94,.28), rgba(34,197,94,.14));
+    }
+
+    /* iOS switch */
+    .switch{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 10px;
+    }
+    .switch span{ font-size:12px; color:var(--muted); font-weight:900; }
+    .toggle{
+      width:46px;height:26px;
+      border-radius:999px;
+      background:rgba(255,255,255,.14);
+      border:1px solid var(--stroke);
+      position:relative;
+      cursor:pointer;
+      transition:background .2s ease;
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    }
+    .toggle::after{
+      content:"";
+      width:22px;height:22px;
+      border-radius:999px;
+      background:rgba(255,255,255,.92);
+      position:absolute;
+      top:1px; left:1px;
+      transition:transform .2s ease;
+      box-shadow:0 6px 16px rgba(0,0,0,.22);
+    }
+    [data-theme="light"] .toggle::after{ background:rgba(255,255,255,.98); }
+    .toggle.on{ background:rgba(34,197,94,.30); border-color:rgba(34,197,94,.35); }
+    .toggle.on::after{ transform:translateX(20px); }
+
+    /* Main cards */
+    .gridTop{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:14px;
+      margin-top:16px;
+    }
+    @media (max-width:980px){
+      .gridTop{ grid-template-columns:1fr; }
+      .brand{ min-width:auto; }
+    }
+
+    .card{
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.06));
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(var(--blur));
+      overflow:hidden;
+    }
+    .cardHeader{
+      padding:14px 16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .cardHeader h2{
+      margin:0;
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .cardHeader p{
+      margin:4px 0 0;
+      font-size:12.2px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .cardBody{ padding:14px 16px 16px; }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    @media(max-width:560px){ .kpis{ grid-template-columns:1fr; } }
+    .kpi{
+      padding:12px;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.055);
+      min-height:76px;
+    }
+    .kpi .label{ font-size:11.5px; color:var(--muted); font-weight:900; margin-bottom:6px; }
+    .kpi .value{ font-size:18px; font-weight:950; letter-spacing:.2px; }
+    .kpi .hint{ font-size:11.5px; color:rgba(238,243,255,.58); margin-top:6px; line-height:1.35; }
+    [data-theme="light"] .kpi .hint{ color:rgba(11,19,36,.55); }
+
+    /* Evolution line (editable stage per airline) */
+    .evoWrap{
+      margin-top:12px;
+      padding:12px;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.045);
+    }
+    .evoTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .evoTitle .t{
+      font-weight:950;
+      font-size:13px;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.07);
+      font-size:12px;
+      color:var(--muted);
+      font-weight:900;
+      cursor:default;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background:var(--good);
+      box-shadow:0 0 0 5px rgba(34,197,94,.14);
+    }
+
+    .stageBar{
+      position:relative;
+      height:42px;
+      margin-top:6px;
+    }
+    .stageTrack{
+      position:absolute;
+      left:0; right:0;
+      top:20px;
+      border-top:2px dashed rgba(34,197,94,.85);
+      opacity:.9;
+    }
+    .stageNodes{
+      position:absolute;
+      left:0; right:0;
+      top:12px;
+      display:grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0;
+      align-items:center;
+    }
+    .node{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:7px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .node .c{
+      width:14px;height:14px;
+      border-radius:50%;
+      background:rgba(34,197,94,.25);
+      border:2px solid rgba(34,197,94,.55);
+      transition: transform .16s ease, background .2s ease, border-color .2s ease;
+    }
+    .node.active .c{
+      background:rgba(34,197,94,.95);
+      border-color:rgba(34,197,94,1);
+      transform: scale(1.15);
+      box-shadow:0 0 0 7px rgba(34,197,94,.18);
+    }
+    .node .l{
+      font-size:11.2px;
+      color:var(--muted);
+      font-weight:800;
+      opacity:.85;
+      text-align:center;
+      max-width:90px;
+    }
+
+    /* Panels */
+    .panels{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media(max-width:900px){ .panels{ grid-template-columns:1fr; } }
+
+    .panel{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow2);
+      overflow:hidden;
+      transform:translateY(0);
+      transition:transform .18s ease, box-shadow .18s ease;
+      backdrop-filter: blur(14px); /* nice glass */
+    }
+    .panel:hover{ transform:translateY(-3px); box-shadow:var(--shadow); }
+
+    .panelHead{
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .panelHead .left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      font-weight:950;
+      font-size:13px;
+      letter-spacing:.2px;
+      color:#0b1324;
+    }
+    .pico{
+      width:34px;height:34px;
+      border-radius:13px;
+      background:rgba(255,255,255,.72);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 10px 20px rgba(0,0,0,.10);
+      border:1px solid rgba(0,0,0,.06);
+      font-size:15px;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.55);
+      color:#0b1324;
+      font-size:12px;
+      font-weight:900;
+    }
+
+    .panelBody{
+      padding:12px 16px 16px;
+      color:#0b1324;
+    }
+
+    ul{ margin:0; padding-left:18px; }
+    li{
+      margin:7px 0;
+      line-height:1.55;
+      font-size:12.8px;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+      color:rgba(11,19,36,.78);
+    }
+
+    .empty{
+      border:1px dashed rgba(0,0,0,.18);
+      background:rgba(255,255,255,.55);
+      border-radius:18px;
+      padding:14px;
+      color:rgba(11,19,36,.72);
+      font-size:12.5px;
+      line-height:1.5;
+    }
+
+    /* Executive */
+    .exec{
+      margin-top:14px;
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.06));
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(var(--blur));
+      overflow:hidden;
+    }
+    .execTop{
+      padding:14px 16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .execTop .t{
+      font-weight:950;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .execTop .s{
+      margin-top:4px;
+      font-size:12.2px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+    .execBody{
+      padding:14px 16px 16px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media(max-width:900px){ .execBody{ grid-template-columns:1fr; } }
+
+    .ebox{
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:rgba(255,255,255,.06);
+      padding:12px 12px;
+    }
+    .ebox h3{
+      margin:0 0 8px;
+      font-size:12.8px;
+      font-weight:950;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .ebox p, .ebox li{
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.55;
+    }
+    .ebox ul{ padding-left:18px; margin:0; }
+
+    /* Week selector */
+    .weekWrap{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .weekBtn{
+      cursor:pointer;
+      border:1px solid var(--stroke);
+      border-radius:999px;
+      padding:10px 12px;
+      font-weight:950;
+      font-size:12.2px;
+      color:var(--text);
+      background:rgba(255,255,255,.08);
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition:transform .15s ease, filter .2s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .weekBtn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+    .weekBtn.active{
+      border-color:rgba(34,197,94,.45);
+      background:rgba(34,197,94,.16);
+    }
+
+    /* Editor sheet */
+    .sheet{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding:14px;
+      z-index:60;
+    }
+    [data-theme="light"] .sheet{ background:rgba(16,24,40,.24); }
+
+    .modal{
+      width:min(980px, 100%);
+      border-radius:26px;
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+      backdrop-filter:blur(var(--blur));
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      transform:translateY(14px);
+      animation:pop .20s ease forwards;
+    }
+    @keyframes pop{ to{ transform:translateY(0); } }
+
+    .modalTop{
+      padding:14px 16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .modalTop .left{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .modalTop .left .t{
+      font-weight:950;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .modalTop .left .s{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .modalBody{
+      padding:14px 16px 16px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media(max-width:860px){ .modalBody{ grid-template-columns:1fr; } }
+
+    .fieldLabel{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.2px;
+      margin:2px 0 8px 2px;
+      color:var(--text);
+    }
+    textarea{
+      width:100%;
+      min-height:150px;
+      resize:vertical;
+      border-radius:18px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      padding:12px;
+      outline:none;
+      font-size:12.7px;
+      line-height:1.5;
+      font-family:Inter,system-ui;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+    [data-theme="light"] textarea{
+      background:rgba(255,255,255,.72);
+      color:#0b1324;
+      border-color:rgba(16,24,40,.14);
+    }
+
+    /* PDF settings */
+    .card, .panel, .kpi, .exec, .ebox { page-break-inside: avoid; break-inside: avoid; }
+
+    /* subtle entry animation */
+    .fadeIn{ animation:fade .22s ease both; }
+    @keyframes fade{
+      from{ opacity:0; transform:translateY(6px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+
+    /* ======= YOUR REQUEST: 80% TRANSPARENCY FOR 4 PANELS =======
+       #EBF7F6 -> rgba(235,247,246,0.80)
+       #FFEDED -> rgba(255,237,237,0.80)
+    */
+    .bgA{
+      background: linear-gradient(180deg,
+        rgba(235,247,246,0.80),
+        rgba(235,247,246,0.72)
+      );
+    }
+    .bgB{
+      background: linear-gradient(180deg,
+        rgba(255,237,237,0.80),
+        rgba(255,237,237,0.72)
+      );
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap" id="printArea">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Board Weekly Business Update</h1>
+          <div class="sub">Live editable • Auto-save by Week • iOS glass theme</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="pill selectWrap" title="Select airline">
+          <label>Airline</label>
+          <select id="airlineSelect"></select>
+          <div class="chev"></div>
+        </div>
+
+        <div class="pill selectWrap" title="Select week">
+          <label>Week</label>
+          <select id="weekSelect"></select>
+          <div class="chev"></div>
+        </div>
+
+        <button class="btn" id="editBtn">✏️ Edit update</button>
+        <button class="btn primary" id="newWeekBtn">📅 New Week</button>
+        <button class="btn good" id="snapshotBtn" title="Save weekly snapshot">📌 Save Snapshot</button>
+        <button class="btn primary" id="pdfBtn" title="Export PDF (no cuts)">📄 Export PDF</button>
+
+        <div class="pill switch" title="Theme">
+          <span>Light</span>
+          <div id="themeToggle" class="toggle" role="switch" aria-checked="false"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top area -->
+    <div class="gridTop">
+      <div class="card fadeIn">
+        <div class="cardHeader">
+          <div>
+            <h2>Executive Overview</h2>
+            <p>Auto-save per airline and week. Click nodes below to change airline stage.</p>
+          </div>
+          <span class="badge"><span class="dot"></span><span id="lastSavedTxt">Auto-save enabled</span></span>
+        </div>
+
+        <div class="cardBody">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Selected airline</div>
+              <div class="value" id="kpiAirline">—</div>
+              <div class="hint" id="kpiHint">Pick airline + week</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Selected week</div>
+              <div class="value" id="kpiWeek">—</div>
+              <div class="hint">Week-based history</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Stage</div>
+              <div class="value" id="kpiStage">—</div>
+              <div class="hint">Tap a node to update stage</div>
+            </div>
+          </div>
+
+          <div class="evoWrap" style="margin-top:12px;">
+            <div class="evoTitle">
+              <div class="t">🟢 Airline Evolution Line</div>
+              <div class="badge" id="stageBadge"><span class="dot"></span><span id="stageBadgeTxt">Stage: —</span></div>
+            </div>
+
+            <div class="stageBar">
+              <div class="stageTrack"></div>
+              <div class="stageNodes" id="stageNodes"></div>
+            </div>
+
+            <div class="note" style="margin-top:10px;">
+              Stage levels are stored per <b>Airline + Week</b>. (Auto-saved)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card fadeIn">
+        <div class="cardHeader">
+          <div>
+            <h2>Week History</h2>
+            <p>Switch between stored weekly updates.</p>
+          </div>
+          <span class="badge">🗂 Auto History</span>
+        </div>
+        <div class="cardBody">
+          <div class="weekWrap" id="weekButtons"></div>
+          <div class="note" style="margin-top:10px;">
+            Use <b>New Week</b> to create a new week entry, then edit updates.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 panels -->
+    <div class="panels fadeIn" id="panels"></div>
+
+    <!-- Executive section -->
+    <div class="exec fadeIn">
+      <div class="execTop">
+        <div>
+          <div class="t">CEO Recommended Executive Plan</div>
+          <div class="s">Board-ready plan based on the selected airline update (editable per week).</div>
+        </div>
+        <span class="badge"><span class="dot"></span>Executive</span>
+      </div>
+
+      <div class="execBody">
+        <div class="ebox">
+          <h3>🧩 What is the Executive Plan?</h3>
+          <p>
+            The executive plan is a <b>short, decision-ready</b> action plan for leadership:
+            <br/>✅ What we will deliver this week
+            <br/>✅ What approvals/decisions are required
+            <br/>✅ What risks could block delivery
+            <br/>✅ What mitigation and escalation is needed
+          </p>
+        </div>
+
+        <div class="ebox">
+          <h3>🎯 CEO Recommendations (Editable)</h3>
+          <ul id="ceoAdvice"></ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Editor Sheet -->
+  <div class="sheet" id="sheet">
+    <div class="modal">
+      <div class="modalTop">
+        <div class="left">
+          <div class="t" id="modalTitle">Edit Weekly Update</div>
+          <div class="s">One bullet per line. Saved to the selected week automatically.</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn" id="cancelEdit">Close</button>
+          <button class="btn good" id="saveEdit">Save</button>
+        </div>
+      </div>
+
+      <div class="modalBody">
+        <div>
+          <div class="fieldLabel">🟦 Current update</div>
+          <textarea id="fieldCurrent" placeholder="- ..."></textarea>
+        </div>
+        <div>
+          <div class="fieldLabel">🧭 What is next</div>
+          <textarea id="fieldNext" placeholder="- ..."></textarea>
+        </div>
+        <div>
+          <div class="fieldLabel">⚠️ Challenges</div>
+          <textarea id="fieldChallenges" placeholder="- ..."></textarea>
+        </div>
+        <div>
+          <div class="fieldLabel">🛡️ Mitigation plan</div>
+          <textarea id="fieldMitigation" placeholder="- ..."></textarea>
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <div class="fieldLabel">🎯 CEO Recommendations</div>
+          <textarea id="fieldCEO" placeholder="- ..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AIRLINES = ["Flynas","Flyadeal","SRA","Air Arabia","Alaoula","Alphastar"];
+    const STAGES = ["Awareness","Interest","Consideration","Intent","Evaluation","Purchase"];
+
+    const STORE_KEY = "board_weekly_update_v1";
+    const THEME_KEY = "board_theme_v1";
+    const SNAPSHOT_KEY = "board_snapshot_v1";
+
+    function nowISO(){ return new Date().toISOString(); }
+
+    function getDefaultWeekLabel(d=new Date()){
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+      const ww = String(weekNo).padStart(2,"0");
+      return `${date.getUTCFullYear()}-W${ww}`;
+    }
+
+    function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+    function loadStore(){
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw){
+        const w = getDefaultWeekLabel();
+        const base = {
+          meta:{ createdAt: nowISO(), updatedAt: nowISO() },
+          weeks:[w],
+          data:{}
+        };
+        base.data[w] = {};
+        for(const a of AIRLINES){
+          base.data[w][a] = {
+            stage: (a==="Flynas") ? "Purchase" : (a==="Flyadeal") ? "Evaluation" : (a==="SRA") ? "Intent" : (a==="Alphastar") ? "Interest" : "Awareness",
+            panels: { current:[], next:[], challenges:[], mitigation:[] },
+            ceoAdvice: []
+          };
+        }
+
+        base.data[w]["Flynas"].panels.current = [
+          "Total aircraft equipped: 4 aircraft.",
+          "Aircraft #5 in GMR India to start installation.",
+          "All material for AC#5 handed over to Flynas on 13.01.26.",
+          "MOI approval escalated via CST to Group CEO STC."
+        ];
+        base.data[w]["Flynas"].panels.next = [
+          "Complete Aircraft #5 installation.",
+          "Secure Eclipse kits delivery schedule for upcoming C-check slots.",
+          "Prepare commercial launch announcement plan with STC/Flynas."
+        ];
+        base.data[w]["Flynas"].panels.challenges = [
+          "MOI approval not finalized (High).",
+          "Installation kits delivery delays (High).",
+          "MRO execution dependency (Medium)."
+        ];
+        base.data[w]["Flynas"].panels.mitigation = [
+          "Temporary compliance approach aligned with STS as interim solution.",
+          "Prioritize kits for C-check windows; crash schedule with SAMI if needed.",
+          "Executive escalation path with clear decision date."
+        ];
+        base.data[w]["Flynas"].ceoAdvice = [
+          "Approve daily MOI follow-up cadence with clear owner.",
+          "Protect aircraft slots by locking kits allocation per C-check.",
+          "Align comms plan once approval is secured."
+        ];
+
+        base.data[w]["Flyadeal"].panels.current = [
+          "Reached Evaluation stage after RFP + consultant recommendation + technical/commercial engagements.",
+          "C-level engagement held with Flyadeal leadership."
+        ];
+        base.data[w]["Flyadeal"].panels.next = [
+          "Sign MoU.",
+          "Prepare for POC.",
+          "Place order for fleet rollout upon decision."
+        ];
+        base.data[w]["Flyadeal"].panels.challenges = [
+          "Market noise from Starlink announcements affecting timing.",
+          "Need Flynas launch reference to increase confidence."
+        ];
+        base.data[w]["Flyadeal"].panels.mitigation = [
+          "Announce Flynas ASAP to restore confidence.",
+          "Advance MoU/POC readiness to reduce decision-to-launch lead time."
+        ];
+        base.data[w]["Flyadeal"].ceoAdvice = [
+          "Use Flynas reference case in board narrative.",
+          "Keep Flyadeal warm with MoU + POC plan ready."
+        ];
+
+        localStorage.setItem(STORE_KEY, JSON.stringify(base));
+        return base;
+      }
+      try{ return JSON.parse(raw); } catch(e){ return null; }
+    }
+
+    function saveStore(store){
+      store.meta.updatedAt = nowISO();
+      localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      updateLastSaved();
+    }
+
+    function updateLastSaved(){
+      const el = document.getElementById("lastSavedTxt");
+      el.textContent = "Saved: " + new Date().toLocaleString();
+    }
+
+    function escapeHtml(str){
+      return (str||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+    }
+    function listToText(arr){
+      return (arr||[]).map(x=>{
+        const t=(x||"").trim();
+        return t.startsWith("-") ? t : "- " + t;
+      }).join("\n");
+    }
+    function textToList(txt){
+      return (txt||"").split("\n").map(x=>x.trim()).filter(Boolean).map(x=>x.replace(/^\-\s?/,""));
+    }
+
+    let store = loadStore();
+    if(!store){ alert("Storage load error. Please refresh."); }
+
+    let currentWeek = store.weeks[0];
+    let currentAirline = AIRLINES[0];
+
+    const airlineSelect = document.getElementById("airlineSelect");
+    const weekSelect = document.getElementById("weekSelect");
+    const weekButtons = document.getElementById("weekButtons");
+
+    const kpiAirline = document.getElementById("kpiAirline");
+    const kpiWeek = document.getElementById("kpiWeek");
+    const kpiStage = document.getElementById("kpiStage");
+    const stageBadgeTxt = document.getElementById("stageBadgeTxt");
+
+    const stageNodes = document.getElementById("stageNodes");
+    const panelsEl = document.getElementById("panels");
+    const ceoAdviceEl = document.getElementById("ceoAdvice");
+
+    const editBtn = document.getElementById("editBtn");
+    const newWeekBtn = document.getElementById("newWeekBtn");
+    const pdfBtn = document.getElementById("pdfBtn");
+    const snapshotBtn = document.getElementById("snapshotBtn");
+
+    const sheet = document.getElementById("sheet");
+    const cancelEdit = document.getElementById("cancelEdit");
+    const saveEditBtn = document.getElementById("saveEdit");
+
+    const fieldCurrent = document.getElementById("fieldCurrent");
+    const fieldNext = document.getElementById("fieldNext");
+    const fieldChallenges = document.getElementById("fieldChallenges");
+    const fieldMitigation = document.getElementById("fieldMitigation");
+    const fieldCEO = document.getElementById("fieldCEO");
+    const modalTitle = document.getElementById("modalTitle");
+
+    // Theme
+    const themeToggle = document.getElementById("themeToggle");
+    const themeStored = localStorage.getItem(THEME_KEY) || "dark";
+    document.documentElement.setAttribute("data-theme", themeStored);
+    themeToggle.classList.toggle("on", themeStored === "light");
+    themeToggle.setAttribute("aria-checked", themeStored === "light" ? "true" : "false");
+    themeToggle.addEventListener("click", ()=>{
+      const current = document.documentElement.getAttribute("data-theme") || "dark";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem(THEME_KEY, next);
+      themeToggle.classList.toggle("on", next === "light");
+      themeToggle.setAttribute("aria-checked", next === "light" ? "true" : "false");
+    });
+
+    function ensureWeekData(week){
+      if(!store.data[week]){
+        store.data[week] = {};
+        for(const a of AIRLINES){
+          store.data[week][a] = {
+            stage: "Awareness",
+            panels: { current:[], next:[], challenges:[], mitigation:[] },
+            ceoAdvice:[]
+          };
+        }
+      }
+    }
+
+    function renderSelects(){
+      airlineSelect.innerHTML = AIRLINES.map(a=>`<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
+      airlineSelect.value = currentAirline;
+
+      weekSelect.innerHTML = store.weeks.map(w=>`<option value="${escapeHtml(w)}">${escapeHtml(w)}</option>`).join("");
+      weekSelect.value = currentWeek;
+    }
+
+    function renderWeekButtons(){
+      weekButtons.innerHTML = "";
+      store.weeks.forEach(w=>{
+        const b = document.createElement("div");
+        b.className = "weekBtn" + (w===currentWeek ? " active" : "");
+        b.textContent = w;
+        b.addEventListener("click", ()=>{
+          currentWeek = w;
+          weekSelect.value = w;
+          ensureWeekData(currentWeek);
+          renderAll();
+        });
+        weekButtons.appendChild(b);
+      });
+    }
+
+    function renderStageLine(){
+      stageNodes.innerHTML = "";
+      const entry = store.data[currentWeek][currentAirline];
+      const active = entry.stage;
+
+      STAGES.forEach(stage=>{
+        const n = document.createElement("div");
+        n.className = "node" + (stage===active ? " active" : "");
+        n.innerHTML = `<div class="c"></div><div class="l">${stage}</div>`;
+        n.addEventListener("click", ()=>{
+          entry.stage = stage;
+          saveStore(store);
+          renderAll();
+        });
+        stageNodes.appendChild(n);
+      });
+    }
+
+    function bulletsToHTML(arr){
+      if(!arr || arr.length===0){
+        return `<div class="empty">No update yet. Click <b>Edit update</b> to add bullet points.</div>`;
+      }
+      return `<ul>${arr.map(x=>`<li>${escapeHtml(x)}</li>`).join("")}</ul>`;
+    }
+
+    function renderPanels(){
+      const entry = store.data[currentWeek][currentAirline];
+      panelsEl.innerHTML = `
+        <div class="panel bgA">
+          <div class="panelHead">
+            <div class="left"><span class="pico">🟦</span>Current Update</div>
+            <span class="tag">${escapeHtml(currentAirline)}</span>
+          </div>
+          <div class="panelBody">${bulletsToHTML(entry.panels.current)}</div>
+        </div>
+
+        <div class="panel bgB">
+          <div class="panelHead">
+            <div class="left"><span class="pico">🧭</span>What is Next</div>
+            <span class="tag">Actions</span>
+          </div>
+          <div class="panelBody">${bulletsToHTML(entry.panels.next)}</div>
+        </div>
+
+        <div class="panel bgB">
+          <div class="panelHead">
+            <div class="left"><span class="pico">⚠️</span>Challenges</div>
+            <span class="tag">Risks</span>
+          </div>
+          <div class="panelBody">${bulletsToHTML(entry.panels.challenges)}</div>
+        </div>
+
+        <div class="panel bgA">
+          <div class="panelHead">
+            <div class="left"><span class="pico">🛡️</span>Mitigation Plan</div>
+            <span class="tag">Mitigate</span>
+          </div>
+          <div class="panelBody">${bulletsToHTML(entry.panels.mitigation)}</div>
+        </div>
+      `;
+    }
+
+    function renderCEO(){
+      const entry = store.data[currentWeek][currentAirline];
+      const list = (entry.ceoAdvice || []);
+      if(list.length===0){
+        ceoAdviceEl.innerHTML = `
+          <li>Add CEO recommendations via <b>Edit update</b>.</li>
+          <li>Keep 3–5 bullets only (board style).</li>
+          <li>Make each bullet a decision or action.</li>
+        `;
+      } else {
+        ceoAdviceEl.innerHTML = list.map(x=>`<li>${escapeHtml(x)}</li>`).join("");
+      }
+    }
+
+    function renderKPIs(){
+      const entry = store.data[currentWeek][currentAirline];
+      kpiAirline.textContent = currentAirline;
+      kpiWeek.textContent = currentWeek;
+      kpiStage.textContent = entry.stage;
+      stageBadgeTxt.textContent = "Stage: " + entry.stage;
+      document.getElementById("kpiHint").textContent = "Auto-saved for " + currentAirline + " • " + currentWeek;
+    }
+
+    function renderAll(){
+      ensureWeekData(currentWeek);
+      renderSelects();
+      renderWeekButtons();
+      renderKPIs();
+      renderStageLine();
+      renderPanels();
+      renderCEO();
+    }
+
+    airlineSelect.addEventListener("change", ()=>{
+      currentAirline = airlineSelect.value;
+      renderAll();
+    });
+
+    weekSelect.addEventListener("change", ()=>{
+      currentWeek = weekSelect.value;
+      ensureWeekData(currentWeek);
+      renderAll();
+    });
+
+    newWeekBtn.addEventListener("click", ()=>{
+      const suggested = getDefaultWeekLabel();
+      const name = prompt("New week label (example: 2026-W03):", suggested);
+      if(!name) return;
+      if(store.weeks.includes(name)){
+        alert("This week already exists.");
+        return;
+      }
+      store.weeks.unshift(name);
+      ensureWeekData(name);
+
+      // copy previous week as baseline
+      const prev = store.weeks[1];
+      if(prev && store.data[prev]){
+        store.data[name] = deepClone(store.data[prev]);
+      }
+      saveStore(store);
+      currentWeek = name;
+      renderAll();
+    });
+
+    // Editor open
+    editBtn.addEventListener("click", ()=>{
+      const entry = store.data[currentWeek][currentAirline];
+      modalTitle.textContent = `Edit – ${currentAirline} (${currentWeek})`;
+      fieldCurrent.value = listToText(entry.panels.current);
+      fieldNext.value = listToText(entry.panels.next);
+      fieldChallenges.value = listToText(entry.panels.challenges);
+      fieldMitigation.value = listToText(entry.panels.mitigation);
+      fieldCEO.value = listToText(entry.ceoAdvice || []);
+      sheet.style.display = "flex";
+    });
+
+    cancelEdit.addEventListener("click", ()=> sheet.style.display = "none");
+    sheet.addEventListener("click", (e)=>{ if(e.target === sheet) sheet.style.display = "none"; });
+
+    // Save edits
+    saveEditBtn.addEventListener("click", ()=>{
+      const entry = store.data[currentWeek][currentAirline];
+      entry.panels.current = textToList(fieldCurrent.value);
+      entry.panels.next = textToList(fieldNext.value);
+      entry.panels.challenges = textToList(fieldChallenges.value);
+      entry.panels.mitigation = textToList(fieldMitigation.value);
+      entry.ceoAdvice = textToList(fieldCEO.value);
+
+      saveStore(store);
+      sheet.style.display = "none";
+      renderAll();
+    });
+
+    snapshotBtn.addEventListener("click", ()=>{
+      const payload = { ts: nowISO(), week: currentWeek, data: deepClone(store.data[currentWeek]) };
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(payload));
+      alert("Snapshot saved for " + currentWeek);
+      updateLastSaved();
+    });
+
+    // PDF export (no cuts)
+    pdfBtn.addEventListener("click", async ()=>{
+      const element = document.getElementById("printArea");
+      const topbar = document.querySelector(".topbar");
+      const oldPos = topbar.style.position;
+      topbar.style.position = "relative";
+
+      const fname = `Board_Weekly_Update_${currentAirline}_${currentWeek}.pdf`;
+
+      const opt = {
+        margin: [8,8,10,8],
+        filename: fname,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null,
+          letterRendering: true,
+          windowWidth: 1240
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["avoid-all","css","legacy"] }
+      };
+
+      try{
+        await html2pdf().set(opt).from(element).save();
+      } finally {
+        topbar.style.position = oldPos || "sticky";
+      }
+    });
+
+    // Init
+    currentWeek = store.weeks[0] || getDefaultWeekLabel();
+    ensureWeekData(currentWeek);
+    currentAirline = AIRLINES[0];
+    renderAll();
+    updateLastSaved();
+  </script>
+</body>
+</html>
